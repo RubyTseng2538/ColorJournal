@@ -1,7 +1,5 @@
 # Color Journal
 
-![Color Journal Banner](https://colorjournal.netlify.app/color-journal-preview.png)
-
 ## Description
 
 Color Journal is a digital drawing application designed to help users express their emotions and capture memories through color and art. It serves as a daily visual diary where you can create, save, and revisit your creative expressions tied to specific dates.
