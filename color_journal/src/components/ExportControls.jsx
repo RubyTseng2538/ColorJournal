@@ -6,7 +6,7 @@ export default function ExportControls() {
   const { exportCurrentDrawing } = useContext(DiaryContext);
 
   return (
-    <button onClick={exportCurrentDrawing} className="mt-4 px-2 py-1 bg-blue-500 text-white rounded">
+    <button onClick={exportCurrentDrawing} className="mt-4 px-2 py-1 bg-darkPink text-lightPink rounded">
       Export Entry
     </button>
   );

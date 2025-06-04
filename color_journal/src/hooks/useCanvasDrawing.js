@@ -2,10 +2,13 @@ import React, { createContext, useState } from "react";
 
 export const DiaryContext = createContext();
 
-export function DiaryProvider({ children }) {
-  const [color, setColor] = useState("#ff69b4");
+export function DiaryProvider({ children }) {  const [color, setColor] = useState("#ff69b4");
   const [brushSize, setBrushSize] = useState(5);
+  const [brushOpacity, setBrushOpacity] = useState(1); // Value between 0 and 1
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [usePressure, setUsePressure] = useState(false);
+  const [brushType, setBrushType] = useState("round"); // Options: round, square, splatter, pixel, fill
+  const [isUsingFillBucket, setIsUsingFillBucket] = useState(false); // Toggle for fill bucket tool
 
   const saveDrawing = (canvas) => {
     const data = canvas.toDataURL();
@@ -42,17 +45,22 @@ export function DiaryProvider({ children }) {
     link.download = `diary-${currentDate}.png`;
     link.href = canvas.toDataURL();
     link.click();
-  };
-
-  return (
+  };  return (
     <DiaryContext.Provider
       value={{
         color,
         setColor,
         brushSize,
         setBrushSize,
+        brushOpacity,
+        setBrushOpacity,
         currentDate,
-        setCurrentDate,
+        setCurrentDate,        usePressure,
+        setUsePressure,
+        brushType,
+        setBrushType,
+        isUsingFillBucket,
+        setIsUsingFillBucket,
         saveDrawing,
         loadDrawing,
         clearDrawing,

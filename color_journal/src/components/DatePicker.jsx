@@ -5,9 +5,9 @@ import { DiaryContext } from "../hooks/useCanvasDrawing";
 export default function DatePicker() {
   const { currentDate, setCurrentDate } = useContext(DiaryContext);
   return (
-    <div className="mb-4 flex items-center gap-2">
+    <div className="mb-4 flex items-center gap-2 text-maroon">
       <label>Date:</label>
-      <input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="border p-1" />
+      <input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="border p-1 bg-lightPink" />
     </div>
   );
 }
