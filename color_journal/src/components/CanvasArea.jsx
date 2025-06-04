@@ -4,7 +4,11 @@ import { DiaryContext } from "../hooks/useCanvasDrawing";
 
 export default function CanvasArea() {
   const canvasRef = useRef(null);
-  const { color, brushSize, brushType, brushOpacity, usePressure, currentDate, saveDrawing, loadDrawing } = useContext(DiaryContext);
+  const { 
+    color, brushSize, brushType, brushOpacity, usePressure, 
+    isUsingFillBucket, currentDate, saveDrawing, saveDrawingWithSnapshot, 
+    loadDrawing, undo, redo
+  } = useContext(DiaryContext);
   const lastPos = useRef({ x: 0, y: 0 });
   
   // Utility function to convert hex color to rgba
@@ -20,12 +24,35 @@ export default function CanvasArea() {
     // Return rgba color string
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
-
   useEffect(() => {
     if (canvasRef.current) {
       loadDrawing(canvasRef.current);
     }
-  }, [currentDate]);  const handleDrawStart = (e) => {
+  }, [currentDate]);
+
+  // Add keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Undo: Ctrl+Z or Command+Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo(canvasRef.current);
+      }
+      
+      // Redo: Ctrl+Y or Command+Y or Ctrl+Shift+Z or Command+Shift+Z
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo(canvasRef.current);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [undo, redo]);
+  const handleDrawStart = (e) => {
     const ctx = canvasRef.current.getContext("2d");
     
     // Get the correct position
@@ -35,6 +62,17 @@ export default function CanvasArea() {
     
     // Save starting position
     lastPos.current = { x, y };
+    
+    // Handle fill bucket tool    
+    if (brushType === 'fill') {
+      // Apply fill with opacity
+      const fillRgbaColor = convertHexToRGBA(color, brushOpacity);
+      floodFill(ctx, Math.floor(x), Math.floor(y), fillRgbaColor);
+      
+      // Save the drawing after fill with undo snapshot
+      saveDrawingWithSnapshot(canvasRef.current);
+      return;
+    }
     
     // Set base line width
     const baseWidth = brushSize;
@@ -75,6 +113,7 @@ export default function CanvasArea() {
       canvasRef.current.currentPath.push({ x, y, width: pressureWidth });
     }
   };
+
   // Helper function to apply brush-specific settings
   const applyBrushSettings = (ctx) => {
     // Reset any existing transforms first
@@ -167,7 +206,9 @@ export default function CanvasArea() {
     ctx.drawImage(tempCanvas, 0, 0);
     ctx.restore();
   };  const handleDraw = (e) => {
-    if (!canvasRef.current.isDrawing) return;
+    // Don't process drawing movements for fill bucket
+    if (brushType === 'fill' || !canvasRef.current.isDrawing) return;
+    
     const ctx = canvasRef.current.getContext("2d");
     
     // Get current position
@@ -213,17 +254,16 @@ export default function CanvasArea() {
         // Restore the backup (original state before this stroke)
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         ctx.drawImage(canvasRef.current.backupCanvas, 0, 0);
-        
-        // Draw the continuous path with consistent opacity
+          // Draw the continuous path with consistent opacity
         drawSmoothPath(ctx, canvasRef.current.currentPath);
-        break;    }
+        break;
+    }
       
     // Save the last position
     lastPos.current = { x, y };
-  };
-
-  const handleDrawEnd = () => {
-    if (!canvasRef.current.isDrawing) return;
+  };  const handleDrawEnd = () => {
+    // Don't process drawing end for fill bucket (already handled in handleDrawStart)
+    if (brushType === 'fill' || !canvasRef.current.isDrawing) return;
     
     canvasRef.current.isDrawing = false;
     
@@ -241,10 +281,113 @@ export default function CanvasArea() {
     canvasRef.current.currentPath = [];
     canvasRef.current.backupCanvas = null;
     
-    // Save the drawing to local storage
-    saveDrawing(canvasRef.current);
+    // Save the drawing to local storage with snapshot for undo/redo
+    saveDrawingWithSnapshot(canvasRef.current);
   };
-  return (
+    // Flood fill algorithm (bucket tool)
+  const floodFill = (ctx, x, y, fillColor) => {
+    // Get the canvas dimensions
+    const width = canvasRef.current.width;
+    const height = canvasRef.current.height;
+    
+    // Get the image data from the canvas
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    
+    // Convert target coordinates to array index (each pixel is 4 values: R,G,B,A)
+    const targetIdx = (y * width + x) * 4;
+    
+    // Get the color of the target pixel
+    const targetColor = {
+      r: data[targetIdx],
+      g: data[targetIdx + 1],
+      b: data[targetIdx + 2],
+      a: data[targetIdx + 3]
+    };
+    
+    // Parse the fill color
+    let fillColorObj;
+    if (fillColor.startsWith('rgba')) {
+      // Parse rgba format
+      const matches = fillColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+      if (matches) {
+        fillColorObj = {
+          r: parseInt(matches[1]),
+          g: parseInt(matches[2]),
+          b: parseInt(matches[3]),
+          a: Math.round(parseFloat(matches[4]) * 255)
+        };
+      }
+    } else {
+      // Parse hex format
+      const hex = fillColor.replace('#', '');
+      fillColorObj = {
+        r: parseInt(hex.substring(0, 2), 16),
+        g: parseInt(hex.substring(2, 4), 16),
+        b: parseInt(hex.substring(4, 6), 16),
+        a: 255
+      };
+    }
+    
+    // Don't fill if target color is the same as fill color
+    if (
+      targetColor.r === fillColorObj.r &&
+      targetColor.g === fillColorObj.g &&
+      targetColor.b === fillColorObj.b &&
+      targetColor.a === fillColorObj.a
+    ) {
+      return;
+    }
+    
+    // Stack for flood fill algorithm
+    const stack = [];
+    stack.push([x, y]);
+    
+    // Color similarity tolerance
+    const tolerance = 30;
+    
+    // Check if a pixel's color is similar to the target color
+    const isSimilarColor = (idx) => {
+      return (
+        Math.abs(data[idx] - targetColor.r) <= tolerance &&
+        Math.abs(data[idx + 1] - targetColor.g) <= tolerance &&
+        Math.abs(data[idx + 2] - targetColor.b) <= tolerance &&
+        Math.abs(data[idx + 3] - targetColor.a) <= tolerance
+      );
+    };
+    
+    // Process the flood fill
+    while (stack.length > 0) {
+      const [curX, curY] = stack.pop();
+      
+      // Skip if outside canvas bounds
+      if (curX < 0 || curY < 0 || curX >= width || curY >= height) {
+        continue;
+      }
+      
+      const idx = (curY * width + curX) * 4;
+      
+      // Skip if pixel is not similar to target color or already filled
+      if (!isSimilarColor(idx)) {
+        continue;
+      }
+      
+      // Fill the pixel
+      data[idx] = fillColorObj.r;
+      data[idx + 1] = fillColorObj.g;
+      data[idx + 2] = fillColorObj.b;
+      data[idx + 3] = fillColorObj.a;
+      
+      // Add neighboring pixels to stack
+      stack.push([curX + 1, curY]);
+      stack.push([curX - 1, curY]);
+      stack.push([curX, curY + 1]);
+      stack.push([curX, curY - 1]);
+    }
+    
+    // Put the modified image data back to canvas
+    ctx.putImageData(imageData, 0, 0);
+  };  return (
     <canvas
       ref={canvasRef}
       width={865}

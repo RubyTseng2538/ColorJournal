@@ -1,23 +1,28 @@
 // components/Toolbox.jsx
-import React, { useContext } from "react";
+import React, { useContext, useRef } from "react";
 import { DiaryContext } from "../hooks/useCanvasDrawing";
 
-export default function Toolbox() {  const { 
+export default function Toolbox() {
+  const { 
     color, setColor, 
     brushSize, setBrushSize, 
     brushOpacity, setBrushOpacity,
     brushType, setBrushType, 
     isUsingFillBucket, setIsUsingFillBucket,
     usePressure, setUsePressure, 
-    clearDrawing 
+    clearDrawing, 
+    undo, redo, undoStack, redoStack
   } = useContext(DiaryContext);
+  
+  const canvasRef = useRef(document.querySelector('canvas'));
     
   // Brush icons or names for different brush types
   const brushTypes = [
     { id: 'round', name: 'Round', icon: '●' },
     { id: 'square', name: 'Square', icon: '■' },
     { id: 'splatter', name: 'Splatter', icon: '💦' },
-    { id: 'pixel', name: 'Pixel', icon: '🔲' }
+    { id: 'pixel', name: 'Pixel', icon: '🔲' },
+    { id: 'fill', name: 'Fill Bucket', icon: '🪣' }
   ];
   
   return (
@@ -87,17 +92,44 @@ export default function Toolbox() {  const {
             onChange={(e) => setUsePressure(e.target.checked)}
             className="sr-only peer" 
           />
-          <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-darkPink"></div>
+          <div className="relative w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-darkPink"></div>
           <span className="ml-2 text-sm text-darkPink">Pressure Sensitivity</span>
         </label>
       </div>
-      
-      <button 
+        <button 
         onClick={clearDrawing} 
         className="px-3 py-1 bg-darkPink text-lightPink rounded-lg hover:bg-maroon hover:text-lightPink transition-colors mt-2"
       >
         Clear
       </button>
+      
+      <div className="flex gap-2 mt-2">
+        <button 
+          onClick={() => undo(document.querySelector('canvas'))} 
+          disabled={undoStack.length === 0}
+          className={`px-3 py-1 rounded-lg transition-colors ${
+            undoStack.length > 0 
+              ? 'bg-darkPink text-lightPink hover:bg-maroon hover:text-lightPink' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          title="Undo (Ctrl+Z)"
+        >
+          Undo
+        </button>
+        
+        <button 
+          onClick={() => redo(document.querySelector('canvas'))} 
+          disabled={redoStack.length === 0}
+          className={`px-3 py-1 rounded-lg transition-colors ${
+            redoStack.length > 0 
+              ? 'bg-darkPink text-lightPink hover:bg-maroon hover:text-lightPink' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+          title="Redo (Ctrl+Y)"
+        >
+          Redo
+        </button>
+      </div>
     </div>
   );
 }
