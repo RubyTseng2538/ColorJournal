@@ -5,8 +5,7 @@ import { DiaryContext } from "../hooks/useCanvasDrawing";
 export default function CanvasArea() {
   const canvasRef = useRef(null);
   const { 
-    color, brushSize, brushType, brushOpacity, usePressure, 
-    isUsingFillBucket, currentDate, saveDrawing, saveDrawingWithSnapshot, 
+    color, brushSize, brushType, brushOpacity, usePressure, currentDate, saveDrawingWithSnapshot, 
     loadDrawing, undo, redo
   } = useContext(DiaryContext);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -23,12 +22,11 @@ export default function CanvasArea() {
     
     // Return rgba color string
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  };
-  useEffect(() => {
+  };  useEffect(() => {
     if (canvasRef.current) {
       loadDrawing(canvasRef.current);
     }
-  }, [currentDate]);
+  }, [currentDate, loadDrawing]);
 
   // Add keyboard shortcuts for undo/redo
   useEffect(() => {
@@ -266,16 +264,7 @@ export default function CanvasArea() {
     if (brushType === 'fill' || !canvasRef.current.isDrawing) return;
     
     canvasRef.current.isDrawing = false;
-    
-    // For continuous brushes, finalize the stroke by committing it to the canvas
-    if ((brushType === 'round' || brushType === 'square') && canvasRef.current.currentPath.length > 1) {
-      // The stroke is already drawn on the canvas at this point
-      // Just make sure it's finalized with the proper opacity
-      const ctx = canvasRef.current.getContext("2d");
-      
-      // We'll keep the last drawn state as our final state
-      // No need to redraw here as we've been maintaining the stroke during drawing
-    }
+      // For continuous brushes, finalize the stroke by committing it to the canvas
     
     // Clean up temporary resources
     canvasRef.current.currentPath = [];

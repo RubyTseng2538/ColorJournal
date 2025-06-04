@@ -85,6 +85,7 @@ export function DiaryProvider({ children }) {  const [color, setColor] = useStat
     // Pop the last state from undo stack
     setUndoStack(prevStack => {
       const newStack = [...prevStack];
+      // eslint-disable-next-line
       const previousSnapshot = newStack.pop();
       
       // If this was the last item, we're at the initial state

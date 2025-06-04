@@ -1,5 +1,5 @@
 // components/Toolbox.jsx
-import React, { useContext, useRef } from "react";
+import React, { useContext } from "react";
 import { DiaryContext } from "../hooks/useCanvasDrawing";
 
 export default function Toolbox() {
@@ -8,14 +8,11 @@ export default function Toolbox() {
     brushSize, setBrushSize, 
     brushOpacity, setBrushOpacity,
     brushType, setBrushType, 
-    isUsingFillBucket, setIsUsingFillBucket,
     usePressure, setUsePressure, 
     clearDrawing, 
     undo, redo, undoStack, redoStack
   } = useContext(DiaryContext);
   
-  const canvasRef = useRef(document.querySelector('canvas'));
-    
   // Brush icons or names for different brush types
   const brushTypes = [
     { id: 'round', name: 'Round', icon: '●' },
