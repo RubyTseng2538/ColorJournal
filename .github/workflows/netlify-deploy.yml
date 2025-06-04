@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3      - name: Setup Node.js
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '19'  # Use the Node.js version from your package.json
@@ -18,7 +20,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        - name: Build project
+        
+      - name: Build project
         run: npm run build
         env:
           CI: false  # This prevents treating warnings as errors
