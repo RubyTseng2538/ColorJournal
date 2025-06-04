@@ -51,7 +51,7 @@ git clone https://github.com/RubyTseng2538/ColorJournal.git
 
 2. Navigate to the project directory:
 ```bash
-cd ColorJournal/color_journal
+cd ColorJournal
 ```
 
 3. Install dependencies:
